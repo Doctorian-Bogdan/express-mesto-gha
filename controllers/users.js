@@ -7,12 +7,18 @@ function readAllUsers(req, res) {
 
 function readUser(req, res) {
   return User.findById(req.params.userId)
-    .then((user) => res.status(200).send(user))
+    .then((user) => {
+      if (!user) {
+        res.status(404).send({ message: `Пользователь по указанному ${req.params.userId} не найден.` });
+        return;
+      }
+      res.status(200).send(user);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(404).send(`Пользователь по указанному ${req.params.userId} не найден.`);
+        res.status(400).send({ message: 'Переданы некорректные данные. ' });
       } else {
-        res.status(500).send('Ошибка по умолчанию.');
+        res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
     });
 }
@@ -25,12 +31,14 @@ function createUser(req, res) {
   } = req.body;
 
   return User.create({ name, about, avatar })
-    .then(() => res.status(200).send('Create successful'))
+    .then((user) => {
+      res.status(200).send(user);
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send('Переданы некорректные данные при создании пользователя.');
+        res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя.' });
       } else {
-        res.status(500).send('Ошибка по умолчанию.');
+        res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
     });
 }

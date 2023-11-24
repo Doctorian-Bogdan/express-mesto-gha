@@ -14,22 +14,28 @@ function createCard(req, res) {
   } = req.body;
 
   return Card.create({ name, link, owner })
-    .then(() => res.status(200).send('Create successful'))
+    .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send('Переданы некорректные данные при создании карточки.');
+        res.status(400).send({ message: 'Переданы некорректные данные при создании карточки.' });
       } else {
-        res.status(500).send('Ошибка по умолчанию.');
+        res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
     });
 }
 
 function deleteCard(req, res) {
   return Card.findByIdAndDelete(req.params.cardId)
-    .then(() => res.status(200).send('Deleted successful'))
+    .then((card) => {
+      if (!card) {
+        res.status(404).send({ message: `Карточка по указанному ${req.params.userId} не найдена.` });
+        return;
+      }
+      res.status(200).send(card);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(404).send(`Карточка с указанным ${req.params.cardId} не найдена.`);
+        res.status(400).send({ message: 'Переданы некорректные данные. ' });
       }
     });
 }
@@ -37,14 +43,14 @@ function deleteCard(req, res) {
 function updateLike(req, res) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .then(() => res.status(200).send('Liked successful'))
+    .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send('Переданы некорректные данные для постановки лайка.');
+        res.status(400).send({ message: 'Переданы некорректные данные для постановки лайка.' });
       } else if (err.name === 'CastError') {
-        res.status(404).send(`Передан несуществующий ${req.params.cardId} карточки.`);
+        res.status(404).send({ message: `Передан несуществующий ${req.params.cardId} карточки.` });
       } else {
-        res.status(500).send('Ошибка по умолчанию.');
+        res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
     });
 }
@@ -52,14 +58,14 @@ function updateLike(req, res) {
 function deleteLike(req, res) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .then(() => res.status(200).send('Disliked successful'))
+    .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send('Переданы некорректные данные для снятия лайка.');
+        res.status(400).send({ message: 'Переданы некорректные данные для снятия лайка.' });
       } else if (err.name === 'CastError') {
-        res.status(404).send(`Передан несуществующий ${req.params.cardId} карточки.`);
+        res.status(404).send({ message: `Передан несуществующий ${req.params.cardId} карточки.` });
       } else {
-        res.status(500).send('Ошибка по умолчанию.');
+        res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
     });
 }

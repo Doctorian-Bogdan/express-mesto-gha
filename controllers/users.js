@@ -49,15 +49,15 @@ function updateUser(req, res) {
     about,
   } = req.body;
 
-  return User.findByIdAndUpdate(req.user._id, { name, about }, { new: true })
-    .then(() => res.status(200).send('Updated successful'))
+  return User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send('Переданы некорректные данные при обновлении профиля.');
+        res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля.' });
       } else if (err.name === 'CastError') {
-        res.status(404).send(`Пользователь с указанным ${req.user._id} не найден.`);
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
       } else {
-        res.status(500).send('Ошибка по умолчанию.');
+        res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
     });
 }

@@ -70,7 +70,7 @@ function updateAvatar(req, res) {
   }
 
   return User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
-    .then(() => res.status(200).send('Updated successful'))
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(404).send(`Пользователь с указанным ${req.user._id} не найден.`);

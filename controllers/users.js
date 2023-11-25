@@ -49,7 +49,7 @@ function updateUser(req, res) {
     about,
   } = req.body;
 
-  return User.findByIdAndUpdate('654d70aab8892557cd3db373', { name, about }, { new: true, runValidators: true })
+  return User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .orFail(new Error('NotValidId'))
     .then((user) => res.status(200).send(user))
     .catch((err) => {

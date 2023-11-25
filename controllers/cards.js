@@ -29,11 +29,13 @@ function createCard(req, res) {
 
 function deleteCard(req, res) {
   return Card.findByIdAndDelete(req.params.cardId)
-    .orFail(() => res.status(404).send({ message: `Карточка с указанным ${req.user._id} не найдена.` }))
+    .orFail(new Error('NotValidId'))
     .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные. ' });
+      } else if (err.message === 'NotValidId') {
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
       } else {
         res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
@@ -43,11 +45,13 @@ function deleteCard(req, res) {
 function updateLike(req, res) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(() => res.status(404).send({ message: `Карточка с указанным ${req.user._id} не найдена.` }))
+    .orFail(new Error('NotValidId'))
     .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные для постановки лайка.' });
+      } else if (err.message === 'NotValidId') {
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
       } else {
         res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
@@ -57,11 +61,13 @@ function updateLike(req, res) {
 function deleteLike(req, res) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(() => res.status(404).send({ message: `Карточка с указанным ${req.user._id} не найдена.` }))
+    .orFail(new Error('NotValidId'))
     .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные для снятия лайка.' });
+      } else if (err.message === 'NotValidId') {
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
       } else {
         res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }

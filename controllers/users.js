@@ -10,11 +10,13 @@ function readAllUsers(req, res) {
 
 function readUser(req, res) {
   return User.findById(req.params.userId)
-    .orFail(() => res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` }))
+    .orFail(new Error('NotValidId'))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные. ' });
+      } else if (err.message === 'NotValidId') {
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
       } else {
         res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
@@ -48,11 +50,13 @@ function updateUser(req, res) {
   } = req.body;
 
   return User.findByIdAndUpdate('654d70aab8892557cd3db373', { name, about }, { new: true, runValidators: true })
-    .orFail(() => res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` }))
+    .orFail(new Error('NotValidId'))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля.' });
+      } else if (err.message === 'NotValidId') {
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
       } else {
         res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
@@ -67,10 +71,14 @@ function updateAvatar(req, res) {
   }
 
   return User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
-    .orFail(() => res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` }))
+    .orFail(new Error('NotValidId'))
     .then((user) => res.status(200).send(user))
-    .catch(() => {
-      res.status(500).send('Ошибка по умолчанию.');
+    .catch((err) => {
+      if (err.message === 'NotValidId') {
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+      } else {
+        res.status(500).send('Ошибка по умолчанию.');
+      }
     });
 }
 

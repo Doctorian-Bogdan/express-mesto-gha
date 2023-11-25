@@ -2,7 +2,10 @@ const Card = require('../models/card');
 
 function readAllCards(req, res) {
   return Card.find({})
-    .then((cards) => res.status(200).send(cards));
+    .then((cards) => res.status(200).send(cards))
+    .catch(() => {
+      res.status(500).send({ message: 'Ошибка по умолчанию.' });
+    });
 }
 
 function createCard(req, res) {
@@ -14,7 +17,7 @@ function createCard(req, res) {
   } = req.body;
 
   return Card.create({ name, link, owner })
-    .then((card) => res.status(200).send(card))
+    .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: 'Переданы некорректные данные при создании карточки.' });
@@ -26,16 +29,13 @@ function createCard(req, res) {
 
 function deleteCard(req, res) {
   return Card.findByIdAndDelete(req.params.cardId)
-    .then((card) => {
-      if (!card) {
-        res.status(404).send({ message: `Карточка по указанному ${req.params.userId} не найдена.` });
-        return;
-      }
-      res.status(200).send(card);
-    })
+    .orFail(() => res.status(404).send({ message: `Карточка с указанным ${req.user._id} не найдена.` }))
+    .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные. ' });
+      } else {
+        res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
     });
 }
@@ -43,13 +43,8 @@ function deleteCard(req, res) {
 function updateLike(req, res) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .then((card) => {
-      if (!card) {
-        res.status(404).send({ message: `Карточка по указанному ${req.params.userId} не найдена.` });
-        return;
-      }
-      res.status(200).send(card);
-    })
+    .orFail(() => res.status(404).send({ message: `Карточка с указанным ${req.user._id} не найдена.` }))
+    .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные для постановки лайка.' });
@@ -62,13 +57,8 @@ function updateLike(req, res) {
 function deleteLike(req, res) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .then((card) => {
-      if (!card) {
-        res.status(404).send({ message: `Карточка по указанному ${req.params.userId} не найдена.` });
-        return;
-      }
-      res.status(200).send(card);
-    })
+    .orFail(() => res.status(404).send({ message: `Карточка с указанным ${req.user._id} не найдена.` }))
+    .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные для снятия лайка.' });

@@ -2,18 +2,16 @@ const User = require('../models/user');
 
 function readAllUsers(req, res) {
   return User.find({})
-    .then((users) => res.status(200).send(users));
+    .then((users) => res.status(200).send(users))
+    .catch(() => {
+      res.status(500).send({ message: 'Ошибка по умолчанию.' });
+    });
 }
 
 function readUser(req, res) {
   return User.findById(req.params.userId)
-    .then((user) => {
-      if (!user) {
-        res.status(404).send({ message: `Пользователь по указанному ${req.params.userId} не найден.` });
-        return;
-      }
-      res.status(200).send(user);
-    })
+    .orFail(() => res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` }))
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Переданы некорректные данные. ' });
@@ -32,7 +30,7 @@ function createUser(req, res) {
 
   return User.create({ name, about, avatar })
     .then((user) => {
-      res.status(200).send(user);
+      res.status(201).send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -49,13 +47,12 @@ function updateUser(req, res) {
     about,
   } = req.body;
 
-  return User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+  return User.findByIdAndUpdate('654d70aab8892557cd3db373', { name, about }, { new: true, runValidators: true })
+    .orFail(() => res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` }))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля.' });
-      } else if (err.name === 'CastError') {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
       } else {
         res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
@@ -70,13 +67,10 @@ function updateAvatar(req, res) {
   }
 
   return User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
+    .orFail(() => res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` }))
     .then((user) => res.status(200).send(user))
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(404).send(`Пользователь с указанным ${req.user._id} не найден.`);
-      } else {
-        res.status(500).send('Ошибка по умолчанию.');
-      }
+    .catch(() => {
+      res.status(500).send('Ошибка по умолчанию.');
     });
 }
 

@@ -1,4 +1,23 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+
+function login(req, res) {
+  const {
+    email,
+    password,
+  } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'secret', { expiresIn: '7d' });
+
+      res.send({ token });
+    })
+    .catch(() => {
+      res.status(401).send({ message: 'Присланный токен некорректен' });
+    });
+}
 
 function readAllUsers(req, res) {
   return User.find({})
@@ -28,15 +47,22 @@ function createUser(req, res) {
     name,
     about,
     avatar,
+    email,
+    password,
   } = req.body;
 
-  return User.create({ name, about, avatar })
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
     .then((user) => {
       res.status(201).send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя.' });
+      } else if (err.code === 11000) {
+        res.status(409).send({ message: 'Пользователь с таким email уже существует' });
       } else {
         res.status(500).send({ message: 'Ошибка по умолчанию.' });
       }
@@ -82,10 +108,25 @@ function updateAvatar(req, res) {
     });
 }
 
+function getCurrentUser(req, res) {
+  User.findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+      }
+      res.status(200).send(user);
+    })
+    .catch(() => {
+      res.status(400).send({ message: 'Переданы некорректные данные при получении профиля.' });
+    });
+}
+
 module.exports = {
+  login,
   readAllUsers,
   readUser,
   createUser,
   updateUser,
   updateAvatar,
+  getCurrentUser,
 };

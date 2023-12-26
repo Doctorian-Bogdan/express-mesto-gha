@@ -15,13 +15,6 @@ mongoose.connect(DB_URL)
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-  req.user = {
-    _id: '654d70aab8892557cd3db372',
-  };
-
-  next();
-});
 app.use(router);
 
 app.listen(PORT, () => {

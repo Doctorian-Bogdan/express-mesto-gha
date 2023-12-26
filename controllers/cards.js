@@ -33,6 +33,7 @@ function deleteCard(req, res) {
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
         res.status(403).send({ message: 'Можно удалять только свои карточки' });
+        return;
       }
       res.status(200).send(card);
     })

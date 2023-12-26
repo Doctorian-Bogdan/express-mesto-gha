@@ -31,7 +31,7 @@ function deleteCard(req, res) {
   return Card.findByIdAndDelete(req.params.cardId)
     .orFail(new Error('NotValidId'))
     .then((card) => {
-      if (card.owner !== req.user._id) {
+      if (card.owner.toString() !== req.user._id) {
         res.status(403).send({ message: 'Можно удалять только свои карточки' });
       }
       res.status(200).send(card);

@@ -34,7 +34,8 @@ function deleteCard(req, res, next) {
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
         res.status(403).send({ message: 'Можно удалять только свои карточки' });
-        return;
+      } else if (!card) {
+        next(new NotFoundError('Данная карточка не найдена'));
       }
       res.status(200).send(card);
     })

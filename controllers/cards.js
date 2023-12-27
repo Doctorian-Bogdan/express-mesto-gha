@@ -32,10 +32,13 @@ function createCard(req, res, next) {
 function deleteCard(req, res, next) {
   return Card.findByIdAndDelete(req.params.cardId)
     .then((card) => {
+      if (!card) {
+        next(new NotFoundError('Данная карточка не найдена'));
+        return;
+      }
       if (card.owner.toString() !== req.user._id) {
         res.status(403).send({ message: 'Можно удалять только свои карточки' });
-      } else if (!card) {
-        next(new NotFoundError('Данная карточка не найдена'));
+        return;
       }
       res.status(200).send(card);
     })

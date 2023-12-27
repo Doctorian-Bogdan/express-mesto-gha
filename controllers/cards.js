@@ -53,8 +53,13 @@ function deleteCard(req, res, next) {
 function updateLike(req, res, next) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(next(new NotFoundError('Данный пользователь не найден')))
-    .then((card) => res.status(200).send(card))
+    .then((card) => {
+      if (!card) {
+        next(new NotFoundError('Данная карточка не найдена'));
+        return;
+      }
+      res.status(200).send(card);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequestError('Переданы некорректные данные для постановки лайка. '));
@@ -69,8 +74,13 @@ function updateLike(req, res, next) {
 function deleteLike(req, res, next) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(next(new NotFoundError('Данный пользователь не найден')))
-    .then((card) => res.status(200).send(card))
+    .then((card) => {
+      if (!card) {
+        next(new NotFoundError('Данная карточка не найдена'));
+        return;
+      }
+      res.status(200).send(card);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequestError('Переданы некорректные данные для снятия лайка. '));

@@ -30,8 +30,13 @@ function readAllUsers(req, res, next) {
 
 function readUser(req, res, next) {
   return User.findById(req.params.userId)
-    .orFail(next(new NotFoundError('Данный пользователь не найден')))
-    .then((user) => res.status(200).send(user))
+    .then((user) => {
+      if (!user) {
+        next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
+        return;
+      }
+      res.status(200).send(user);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequestError('Переданы некорректные данные. '));
@@ -105,8 +110,13 @@ function updateAvatar(req, res, next) {
   }
 
   return User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
-    .orFail(next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`)))
-    .then((user) => res.status(200).send(user))
+    .then((user) => {
+      if (!user) {
+        next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
+        return;
+      }
+      res.status(200).send(user);
+    })
     .catch((err) => {
       if (err.message === 'NotValidId') {
         next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
@@ -118,8 +128,11 @@ function updateAvatar(req, res, next) {
 
 function getCurrentUser(req, res, next) {
   User.findById(req.user._id)
-    .orFail(next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`)))
     .then((user) => {
+      if (!user) {
+        next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
+        return;
+      }
       res.status(200).send(user);
     })
     .catch((err) => {

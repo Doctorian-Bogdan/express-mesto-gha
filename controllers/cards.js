@@ -31,7 +31,6 @@ function createCard(req, res, next) {
 
 function deleteCard(req, res, next) {
   return Card.findByIdAndDelete(req.params.cardId)
-    .orFail(next(new NotFoundError('Данный пользователь не найден')))
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
         res.status(403).send({ message: 'Можно удалять только свои карточки' });

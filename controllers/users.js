@@ -1,8 +1,11 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const NotFoundError = require('../errors/NotFoundError');
+const BadRequestError = require('../errors/BadRequestError');
+const ConflictError = require('../errors/ConflictError');
 
-function login(req, res) {
+function login(req, res, next) {
   const {
     email,
     password,
@@ -14,35 +17,33 @@ function login(req, res) {
 
       res.send({ token });
     })
-    .catch(() => {
-      res.status(401).send({ message: 'Присланный токен некорректен' });
+    .catch((err) => {
+      next(err);
     });
 }
 
-function readAllUsers(req, res) {
+function readAllUsers(req, res, next) {
   return User.find({})
     .then((users) => res.status(200).send(users))
-    .catch(() => {
-      res.status(500).send({ message: 'Ошибка по умолчанию.' });
-    });
+    .catch(next);
 }
 
-function readUser(req, res) {
+function readUser(req, res, next) {
   return User.findById(req.params.userId)
-    .orFail(new Error('NotValidId'))
+    .orFail(next(new NotFoundError('Данный пользователь не найден')))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Переданы некорректные данные. ' });
+        next(new BadRequestError('Переданы некорректные данные. '));
       } else if (err.message === 'NotValidId') {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+        next(new NotFoundError(`Пользователь с указанным ${req.user._id} не найден.`));
       } else {
-        res.status(500).send({ message: 'Ошибка по умолчанию.' });
+        next(err);
       }
     });
 }
 
-function createUser(req, res) {
+function createUser(req, res, next) {
   const {
     name,
     about,
@@ -67,16 +68,16 @@ function createUser(req, res) {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя.' });
+        next(new BadRequestError('Переданы некорректные данные при создании пользователя.'));
       } else if (err.code === 11000) {
-        res.status(409).send({ message: 'Пользователь с таким email уже существует' });
+        next(new ConflictError('Пользователь с таким email существует.'));
       } else {
-        res.status(500).send({ message: 'Ошибка по умолчанию.' });
+        next(err);
       }
     });
 }
 
-function updateUser(req, res) {
+function updateUser(req, res, next) {
   const {
     name,
     about,
@@ -87,16 +88,16 @@ function updateUser(req, res) {
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля.' });
+        next(new BadRequestError('Переданы некорректные данные при обновлении профиля.'));
       } else if (err.message === 'NotValidId') {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+        next(new NotFoundError(`Пользователь с указанным ${req.user._id} не найден.`));
       } else {
-        res.status(500).send({ message: 'Ошибка по умолчанию.' });
+        next(err);
       }
     });
 }
 
-function updateAvatar(req, res) {
+function updateAvatar(req, res, next) {
   const { avatar } = req.body;
 
   if (!avatar) {
@@ -104,27 +105,28 @@ function updateAvatar(req, res) {
   }
 
   return User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
-    .orFail(new Error('NotValidId'))
+    .orFail(next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`)))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.message === 'NotValidId') {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+        next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
       } else {
-        res.status(500).send('Ошибка по умолчанию.');
+        next(err);
       }
     });
 }
 
-function getCurrentUser(req, res) {
+function getCurrentUser(req, res, next) {
   User.findById(req.user._id)
+    .orFail(next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`)))
     .then((user) => {
-      if (!user) {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
-      }
       res.status(200).send(user);
     })
-    .catch(() => {
-      res.status(400).send({ message: 'Переданы некорректные данные при получении профиля.' });
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError('Переданы некорректные данные.'));
+      }
+      next(err);
     });
 }
 

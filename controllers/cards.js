@@ -1,14 +1,16 @@
 const Card = require('../models/card');
+const BadRequestError = require('../errors/BadRequestError');
+const NotFoundError = require('../errors/NotFoundError');
 
-function readAllCards(req, res) {
+function readAllCards(req, res, next) {
   return Card.find({})
     .then((cards) => res.status(200).send(cards))
-    .catch(() => {
-      res.status(500).send({ message: 'Ошибка по умолчанию.' });
+    .catch((err) => {
+      next(err);
     });
 }
 
-function createCard(req, res) {
+function createCard(req, res, next) {
   const owner = req.user._id;
 
   const {
@@ -20,16 +22,16 @@ function createCard(req, res) {
     .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные при создании карточки.' });
+        next(new BadRequestError('Переданы некорректные данные при создании карточки. '));
       } else {
-        res.status(500).send({ message: 'Ошибка по умолчанию.' });
+        next(err);
       }
     });
 }
 
-function deleteCard(req, res) {
+function deleteCard(req, res, next) {
   return Card.findByIdAndDelete(req.params.cardId)
-    .orFail(new Error('NotValidId'))
+    .orFail(next(new NotFoundError('Данный пользователь не найден')))
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
         res.status(403).send({ message: 'Можно удалять только свои карточки' });
@@ -39,43 +41,43 @@ function deleteCard(req, res) {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Переданы некорректные данные. ' });
+        next(new BadRequestError('Переданы некорректные данные. '));
       } else if (err.message === 'NotValidId') {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+        next(new NotFoundError(`Пользователь с указанным ${req.user._id} не найден.`));
       } else {
-        res.status(500).send({ message: 'Ошибка по умолчанию.' });
+        next(err);
       }
     });
 }
 
-function updateLike(req, res) {
+function updateLike(req, res, next) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(new Error('NotValidId'))
+    .orFail(next(new NotFoundError('Данный пользователь не найден')))
     .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Переданы некорректные данные для постановки лайка.' });
+        next(new BadRequestError('Переданы некорректные данные для постановки лайка. '));
       } else if (err.message === 'NotValidId') {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+        next(new NotFoundError(`Пользователь с указанным ${req.user._id} не найден.`));
       } else {
-        res.status(500).send({ message: 'Ошибка по умолчанию.' });
+        next(err);
       }
     });
 }
 
-function deleteLike(req, res) {
+function deleteLike(req, res, next) {
   // eslint-disable-next-line max-len
   return Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(new Error('NotValidId'))
+    .orFail(next(new NotFoundError('Данный пользователь не найден')))
     .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Переданы некорректные данные для снятия лайка.' });
+        next(new BadRequestError('Переданы некорректные данные для снятия лайка. '));
       } else if (err.message === 'NotValidId') {
-        res.status(404).send({ message: `Пользователь с указанным ${req.user._id} не найден.` });
+        next(new NotFoundError(`Пользователь с указанным ${req.user._id} не найден.`));
       } else {
-        res.status(500).send({ message: 'Ошибка по умолчанию.' });
+        next(err);
       }
     });
 }

@@ -4,6 +4,7 @@ const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequestError = require('../errors/BadRequestError');
 const ConflictError = require('../errors/ConflictError');
+const { OK, CREATED_OK } = require('../utils/constants');
 
 function login(req, res, next) {
   const {
@@ -24,7 +25,7 @@ function login(req, res, next) {
 
 function readAllUsers(req, res, next) {
   return User.find({})
-    .then((users) => res.status(200).send(users))
+    .then((users) => res.status(OK).send(users))
     .catch(next);
 }
 
@@ -35,7 +36,7 @@ function readUser(req, res, next) {
         next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
         return;
       }
-      res.status(200).send(user);
+      res.status(OK).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -63,7 +64,7 @@ function createUser(req, res, next) {
     }))
     .then((user) => {
       const { _id } = user;
-      res.status(201).send({
+      res.status(CREATED_OK).send({
         email,
         name,
         about,
@@ -90,7 +91,7 @@ function updateUser(req, res, next) {
 
   return User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .orFail(new Error('NotValidId'))
-    .then((user) => res.status(200).send(user))
+    .then((user) => res.status(OK).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при обновлении профиля.'));
@@ -106,7 +107,7 @@ function updateAvatar(req, res, next) {
   const { avatar } = req.body;
 
   if (!avatar) {
-    res.status(400).send('Переданы некорректные данные при обновлении аватара.');
+    next(new BadRequestError('Переданы некорректные данные.'));
   }
 
   return User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
@@ -115,7 +116,7 @@ function updateAvatar(req, res, next) {
         next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
         return;
       }
-      res.status(200).send(user);
+      res.status(OK).send(user);
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
@@ -133,7 +134,7 @@ function getCurrentUser(req, res, next) {
         next(new NotFoundError(`Пользователь с указанным _id: ${req.params.userId} не найден.`));
         return;
       }
-      res.status(200).send(user);
+      res.status(OK).send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {

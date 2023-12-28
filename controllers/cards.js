@@ -1,10 +1,12 @@
 const Card = require('../models/card');
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
+const { OK, CREATED_OK } = require('../utils/constants');
+const ForbiddenError = require('../errors/ForbiddenError');
 
 function readAllCards(req, res, next) {
   return Card.find({})
-    .then((cards) => res.status(200).send(cards))
+    .then((cards) => res.status(OK).send(cards))
     .catch((err) => {
       next(err);
     });
@@ -19,7 +21,7 @@ function createCard(req, res, next) {
   } = req.body;
 
   return Card.create({ name, link, owner })
-    .then((card) => res.status(201).send(card))
+    .then((card) => res.status(CREATED_OK).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при создании карточки. '));
@@ -37,10 +39,10 @@ function deleteCard(req, res, next) {
         return;
       }
       if (card.owner.toString() !== req.user._id) {
-        res.status(403).send({ message: 'Можно удалять только свои карточки' });
+        next(new ForbiddenError('Можно удалять только свои карточки'));
         return;
       }
-      res.status(200).send(card);
+      res.status(OK).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -61,7 +63,7 @@ function updateLike(req, res, next) {
         next(new NotFoundError('Данная карточка не найдена'));
         return;
       }
-      res.status(200).send(card);
+      res.status(OK).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -82,7 +84,7 @@ function deleteLike(req, res, next) {
         next(new NotFoundError('Данная карточка не найдена'));
         return;
       }
-      res.status(200).send(card);
+      res.status(OK).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
